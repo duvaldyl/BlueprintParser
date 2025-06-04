@@ -47,27 +47,25 @@ def draw_shapes(items, pts, shape, width, height, margin):
 
     shape.finish()
 
-def draw_region(src, page, points, width, height, margin):
+def draw_region(src, page, page_number, points, width, height, margin):
     bbox = compute_bounding_box(points) 
 
     page.show_pdf_page(
         pymupdf.Rect(margin, margin, width-margin, height-margin),
         src,
-        pno=34,
+        pno=page_number,
         clip=bbox
     )
 
 def draw_bbox(page, points):
     bbox = compute_bounding_box(points)
-    rect = pymypdf.Rect(bbox)
+    rect = pymupdf.Rect(bbox)
 
     page.draw_rect(
         rect,
         color=(1, 0, 0),
         width=0.5
     )
-
-    doc
 
 class BlueprintParser:
 
@@ -143,7 +141,11 @@ class BlueprintParser:
         points = []
         shapes = []
 
-        outpdf = pymupdf.open()
+        outpdf_parse = pymupdf.open()
+
+        outpdf_bbox = pymupdf.open()
+        outpage_bbox = outpdf_bbox.new_page(width=page.rect.width, height=page.rect.height)
+        outpage_bbox.show_pdf_page(page.rect, doc, page_number)
 
         for path in paths:
             for item in path["items"]:  
@@ -177,17 +179,17 @@ class BlueprintParser:
                 filtered_pts = p[db.labels_ == l]
                 filtered_shapes = s[db.labels_ == l]
 
-                outpage = outpdf.new_page(width=self.page_size[0], height=self.page_size[1])
+                outpage_parse = outpdf_parse.new_page(width=self.page_size[0], height=self.page_size[1])
                 # shape = outpage.new_shape()
 
                 # draw_shapes(filtered_shapes, filtered_pts, shape, self.page_size[0], self.page_size[1], self.margin)
-                draw_region(doc, outpage, filtered_pts, self.page_size[0], self.page_size[1], self.margin)
-                draw_bbox(page, filtered_pts)
+                draw_region(doc, outpage_parse, page_number, filtered_pts, self.page_size[0], self.page_size[1], self.margin)
+                draw_bbox(outpage_bbox, filtered_pts)
                 # shape.commit()
         
-        outpdf.save("parsed.pdf") 
+        outpdf_parse.save("parsed.pdf") 
+        outpdf_bbox.save("bbox.pdf")
 
 # Main code
 b = BlueprintParser(path="../Blueprint.pdf", eps=100, min_samples=100)
-b.parse_page(34)
-
+b.parse_page(35)
