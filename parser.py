@@ -40,10 +40,12 @@ class BlueprintParser:
         self.eps = eps
         self.min_samples = min_samples
 
-    def parse_page(self, page_number):
+    def parse_page(self, page_number, save_path):
         print("Parsing page: " + str(page_number) + "...")
         page = self.doc[page_number]
         paths = page.get_drawings()
+        folder = save_path + '/Page_' + str(page_number)
+        os.makedirs(folder, exist_ok=True)
 
         points = []
 
@@ -85,9 +87,9 @@ class BlueprintParser:
                 draw_region(self.doc, outpage_parse, page_number, filtered_pts, self.page_size[0], self.page_size[1], self.margin)
                 draw_bbox(outpage_bbox, filtered_pts)
         
-        outpdf_parse.save("parsed_" + str(page_number) + ".pdf") 
-        outpdf_bbox.save("bbox_" + str(page_number) + ".pdf")
+        outpdf_parse.save(folder + "/parse_" + str(page_number) + ".pdf") 
+        outpdf_bbox.save(folder + "/bbox" + str(page_number) + ".pdf")
 
     def parse_pdf(self):
         for i in range(len(self.doc)):
-            self.parse_page(i)
+            self.parse_page(i, "Blueprint")
