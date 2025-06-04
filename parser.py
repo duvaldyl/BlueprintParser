@@ -1,6 +1,7 @@
 import pymupdf
 import numpy as np
 from sklearn.cluster import DBSCAN
+import os
 
 def compute_bounding_box(pts):
         x0 = min(pts[:, 0])
@@ -40,6 +41,7 @@ class BlueprintParser:
         self.min_samples = min_samples
 
     def parse_page(self, page_number):
+        print("Parsing page: " + str(page_number) + "...")
         page = self.doc[page_number]
         paths = page.get_drawings()
 
@@ -61,10 +63,12 @@ class BlueprintParser:
                     points.append([item[1].x1, item[1].y1])
                 elif item[0] == "qu": 
                     # shape.draw_quad(item[1])
-                    print("Quad")
+                    # print("Quad")
+                    continue
                 elif item[0] == "c": 
                     # shape.draw_bezier(item[1], item[2], item[3], item[4])
-                    print("Curve")
+                    # print("Curve")
+                    continue
                 else:
                     raise ValueError("unhandled drawing", item)
 
@@ -83,3 +87,7 @@ class BlueprintParser:
         
         outpdf_parse.save("parsed_" + str(page_number) + ".pdf") 
         outpdf_bbox.save("bbox_" + str(page_number) + ".pdf")
+
+    def parse_pdf(self):
+        for i in range(len(self.doc)):
+            self.parse_page(i)
