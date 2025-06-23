@@ -1,0 +1,20 @@
+.viewer {
+    position: relative;
+    background-color: blue; 
+    width=1000;
+    height=1000;
+}
+
+#pdf-viewer {
+    background: green;
+    position: absolute;
+}
+
+.canvas-container {
+    background: purple;
+}
+
+#bounding-box {
+    position: absolute;
+    background-color: transparent;
+}
