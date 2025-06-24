@@ -1,17 +1,27 @@
+.controls {
+    display: flex;
+    background-color: blue;
+    justify-content: space-between;
+}
+
+.page-controls {
+    background-color: orange;
+    display: grid;
+}
+
 .viewer {
+    display: flex;
     position: relative;
     background-color: blue; 
+    /*
     width=1000;
     height=1000;
+    */
 }
 
 #pdf-viewer {
     background: green;
     position: absolute;
-}
-
-.canvas-container {
-    background: purple;
 }
 
 #bounding-box {
