@@ -2,12 +2,11 @@ import * as pdfjsLib from "../static/pdfjs-5.3.31-dist/build/pdf.mjs"
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "../static/pdfjs-5.3.31-dist/build/pdf.worker.mjs";
 
-let pageNumber = 35;
+let pageNumber = 1;
 
-var loadingTask = pdfjsLib.getDocument("/static/Blueprint.pdf");
+var loadingTask = pdfjsLib.getDocument('static/uploads/blueprint.pdf');
 loadingTask.promise.then(function(pdf) {
     pdf.getPage(pageNumber).then(function(page) {
-        console.log('made it in');
         var scale = 1; //TODO
         var viewport = page.getViewport({scale: scale});
 

@@ -9,7 +9,7 @@ bp = Blueprint('clip', __name__)
 @bp.route('/clip', methods=('GET', 'POST'))
 def clip():
     if request.method == 'POST':
-        b = parser.BlueprintParser('Blueprint.pdf', eps=110, min_samples=100)
+        b = parser.BlueprintParser('./blueprintparser/static/uploads/blueprint.pdf', eps=110, min_samples=100)
         data = request.get_json()
         x0 = data['startX']
         y0 = data['startY']
