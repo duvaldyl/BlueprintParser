@@ -5,14 +5,19 @@
 </head>
 
 <body>
-    <section class="content">
+    <div class="controls">
         <form method="POST" action="/upload" enctype="multipart/form-data">
             <input type="file" name="pdf">
             <input type="submit" id="submit">
         </form>
         <button id="clip">Clip</button>
-    </section>
-    <section class="viewer">
+        <div class="page-controls">
+            <button id='page-up'> Up </button>
+            <input type=number id=page-number-input>
+            <button id='page-down'> Down </button>
+        </div>
+    </div>
+    <div class="viewer">
         <!--
         <p id='x-start'></p>
         <p id='y-start'></p>
@@ -20,11 +25,10 @@
         <p id='y'></p>
         -->
 
-        <canvas class="canvas-container" id="pdf-viewer" width=500 height=500></canvas>
+        <canvas id="pdf-viewer" width=500 height=500></canvas>
         <!--iframe src="/static/Blueprint.pdf" id="pdf-viewer" width=1000 height=1000><iframe-->
         <canvas id="bounding-box" width=400 height=400></canvas>
-    </section>
-    
+    </div>
 
     <script type="module" src="../static/script.js"></script>
 </body>
