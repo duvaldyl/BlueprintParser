@@ -6,17 +6,19 @@
 
 <body>
     <section class="content">
-        <form method="POST" action="/upload/" enctype="multipart/form-data">
+        <form method="POST" action="/upload" enctype="multipart/form-data">
             <input type="file" name="pdf">
-            <input type="submit">
+            <input type="submit" id="submit">
         </form>
         <button id="clip">Clip</button>
     </section>
     <section class="viewer">
+        <!--
         <p id='x-start'></p>
         <p id='y-start'></p>
         <p id='x'></p>
         <p id='y'></p>
+        -->
 
         <canvas class="canvas-container" id="pdf-viewer" width=500 height=500></canvas>
         <!--iframe src="/static/Blueprint.pdf" id="pdf-viewer" width=1000 height=1000><iframe-->
