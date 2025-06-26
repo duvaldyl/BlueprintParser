@@ -3,20 +3,25 @@ import * as pdfjsLib from "../static/pdfjs-5.3.31-dist/build/pdf.mjs"
 pdfjsLib.GlobalWorkerOptions.workerSrc = "../static/pdfjs-5.3.31-dist/build/pdf.worker.mjs";
 
 let pageNumber = 1;
+let scale = 1;
 
 function renderPage(pageNumber) {
     var loadingTask = pdfjsLib.getDocument('static/uploads/blueprint.pdf');
     // pageNumber = parseInt(e.target.value);
     loadingTask.promise.then(function(pdf) {
         pdf.getPage(pageNumber).then(function(page) {
-            var scale = 1; //TODO
-            var viewport = page.getViewport({scale: scale});
-
+            var viewer = document.getElementById("viewer");
             var pdfCanvas = document.getElementById("pdf-viewer");
             var boundingBoxCanvas = document.getElementById("bounding-box");
 
+            var viewport = page.getViewport({scale: 1});
+            scale = Math.min(viewer.clientWidth/viewport.width, viewer.clientHeight/viewport.height);
+            viewport = page.getViewport({scale: scale});
+
+                        
             pdfCanvas.height = viewport.height;
             pdfCanvas.width = viewport.width; 
+
             boundingBoxCanvas.height = pdfCanvas.height;
             boundingBoxCanvas.width = pdfCanvas.width;
 
@@ -81,7 +86,6 @@ document.addEventListener('mouseup', e => {
 })
 
 document.getElementById('clip').addEventListener('click', e => {
-    console.log("made it in");
     fetch('/clip', {
         method: 'POST',
         headers: {
@@ -92,7 +96,14 @@ document.getElementById('clip').addEventListener('click', e => {
             startX: startX,
             startY: startY,
             endX: endX,
-            endY: endY
+            endY: endY,
+            scale: scale
         })
-    });
-})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(!data.success) {
+            console.log(data.error);
+        }
+    })
+});

@@ -38,15 +38,16 @@ class BlueprintParser:
         self.eps = eps
         self.min_samples = min_samples
 
-    def clip_region(self, page_number, bbox):
+    def clip_region(self, page_number, bbox, scale=1):
         outpdf = pymupdf.open()
         outpage = outpdf.new_page(width=700, height=700)
+        scale_bbox = tuple(map(lambda x: x/scale, bbox)) 
         
         outpage.show_pdf_page(
             pymupdf.Rect(self.margin, self.margin, 640-self.margin, 640-self.margin),
             self.doc,
             pno=page_number,
-            clip=bbox,
+            clip=scale_bbox,
         )
         outpdf.save("clip.pdf")
 
