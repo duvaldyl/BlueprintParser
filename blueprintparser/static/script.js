@@ -4,6 +4,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "../static/pdfjs-5.3.31-dist/build/pdf.
 
 let pageNumber = 1;
 let scale = 1;
+let displayScale = 1; // Scale factor used for display
+let pdfViewport = null; // Store the viewport for coordinate calculations
 
 var isRendering = null;
 
@@ -23,21 +25,56 @@ async function renderPage(pageNumber) {
         const pdfCanvas = document.getElementById("pdf-viewer");
         const boundingBoxCanvas = document.getElementById("bounding-box");
 
-        let viewport = page.getViewport({scale: 1});
-        scale = Math.min(viewer.clientWidth/viewport.width, viewer.clientHeight/viewport.height);
+        // Get the natural viewport at scale 1
+        const naturalViewport = page.getViewport({scale: 1});
         
-        viewport = page.getViewport({scale: scale});
+        // Calculate display scale to fit container
+        displayScale = Math.min(viewer.clientWidth/naturalViewport.width, viewer.clientHeight/naturalViewport.height);
         
-        pdfCanvas.height = viewport.height;
-        pdfCanvas.width = viewport.width; 
+        // Use higher resolution for better quality (2x device pixel ratio or minimum 2x)
+        const devicePixelRatio = window.devicePixelRatio || 1;
+        const renderScale = Math.max(displayScale * devicePixelRatio, displayScale * 2);
+        
+        // Create viewport for rendering at higher resolution
+        const renderViewport = page.getViewport({scale: renderScale});
+        
+        // Store the display viewport for coordinate calculations
+        pdfViewport = page.getViewport({scale: displayScale});
+        scale = displayScale; // Keep this for backwards compatibility
+        
+        // Set canvas size for high resolution
+        pdfCanvas.width = renderViewport.width;
+        pdfCanvas.height = renderViewport.height;
+        
+        // Set display size to fit container
+        pdfCanvas.style.width = pdfViewport.width + 'px';
+        pdfCanvas.style.height = pdfViewport.height + 'px';
 
-        boundingBoxCanvas.height = pdfCanvas.clientHeight;
-        boundingBoxCanvas.width = pdfCanvas.clientWidth;
+        // Set bounding box canvas to match display size
+        boundingBoxCanvas.width = pdfViewport.width;
+        boundingBoxCanvas.height = pdfViewport.height;
+        boundingBoxCanvas.style.width = pdfViewport.width + 'px';
+        boundingBoxCanvas.style.height = pdfViewport.height + 'px';
+        
+        // Center both canvases in the container
+        const containerRect = viewer.getBoundingClientRect();
+        const canvasLeft = (containerRect.width - pdfViewport.width) / 2;
+        const canvasTop = (containerRect.height - pdfViewport.height) / 2;
+        
+        pdfCanvas.style.left = canvasLeft + 'px';
+        pdfCanvas.style.top = canvasTop + 'px';
+        boundingBoxCanvas.style.left = canvasLeft + 'px';
+        boundingBoxCanvas.style.top = canvasTop + 'px';
 
         const context = pdfCanvas.getContext('2d');
+        
+        // Scale context for high resolution rendering
+        const scaleRatio = renderScale / displayScale;
+        context.scale(scaleRatio, scaleRatio);
+        
         const renderContext = {
             canvasContext: context,
-            viewport: viewport
+            viewport: page.getViewport({scale: displayScale})
         };
 
         await page.render(renderContext).promise;
@@ -85,23 +122,36 @@ const ctx = canvas.getContext('2d');
 let startX, startY, endX, endY;
 let isDrawing = false;
 
+// Helper function to get mouse coordinates relative to the bounding box canvas
+function getMouseCoordinates(e, canvas) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+    };
+}
+
 canvas.addEventListener('mousedown', e => {
     isDrawing = true;
-    startX = e.offsetX;
-    startY = e.offsetY;
+    const coords = getMouseCoordinates(e, canvas);
+    startX = coords.x;
+    startY = coords.y;
 })
 
-document.addEventListener('mousemove', e => {
+canvas.addEventListener('mousemove', e => {
     if (isDrawing) {
-        endX = e.offsetX;
-        endY = e.offsetY;
+        const coords = getMouseCoordinates(e, canvas);
+        endX = coords.x;
+        endY = coords.y;
+        
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.strokeRect(startX, startY, endX-startX, endY-startY);
         ctx.strokeStyle = 'red';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(startX, startY, endX-startX, endY-startY);
     }
 });
 
-document.addEventListener('mouseup', e => {
+canvas.addEventListener('mouseup', e => {
     isDrawing = false;
 })
 
@@ -158,4 +208,9 @@ document.getElementById('save').addEventListener('click', e => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+});
+
+// Initialize by rendering the first page
+document.addEventListener('DOMContentLoaded', () => {
+    renderPage(pageNumber);
 });
