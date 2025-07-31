@@ -230,10 +230,41 @@ document.getElementById('clip').addEventListener('click', e => {
             console.error(data.error);
         } else {
             let uuid = data.uuid;
+            let filename = parseInt(pageNumber) + "_" + uuid + "_clip.pdf";
             let clippedImagesContainer = document.getElementById("clipped-images");
-            let iframe = document.createElement('iframe');
-            iframe.src = "/clips/" + parseInt(pageNumber) + "_" + uuid + "_clip.pdf";
-            clippedImagesContainer.appendChild(iframe);
+            
+            // Create a container for the clip with delete button
+            let clipContainer = document.createElement('div');
+            clipContainer.className = 'clip-container';
+            clipContainer.setAttribute('data-filename', filename);
+            
+            // Create a canvas for the PDF preview
+            let canvas = document.createElement('canvas');
+            canvas.className = 'clip-preview';
+            canvas.width = 170; // Fixed width for consistent previews
+            canvas.height = 120; // Fixed height
+            
+            // Render the PDF clip to the canvas
+            renderClipPreview(canvas, "/clips/" + filename);
+            
+            // Create the delete button
+            let deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-clip-btn';
+            deleteBtn.innerHTML = '×';
+            deleteBtn.title = 'Delete this clip';
+            
+            // Add click handler for delete button
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteClip(filename, clipContainer);
+            });
+            
+            // Add elements to container
+            clipContainer.appendChild(canvas);
+            clipContainer.appendChild(deleteBtn);
+            
+            // Add container to the clips area
+            clippedImagesContainer.appendChild(clipContainer);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
     });
@@ -268,6 +299,52 @@ document.getElementById('save').addEventListener('click', e => {
         console.error('Error saving clips:', error);
     });
 });
+
+// Function to delete a clip
+function deleteClip(filename, clipContainer) {
+    fetch(`/delete/${filename}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove the clip container from the DOM
+            clipContainer.remove();
+        } else {
+            console.error('Error deleting clip:', data.error);
+            alert('Failed to delete clip. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting clip:', error);
+        alert('Failed to delete clip. Please try again.');
+    });
+}
+
+// Function to render a PDF clip preview
+function renderClipPreview(canvas, clipUrl) {
+    pdfjsLib.getDocument(clipUrl).promise.then(pdf => {
+        pdf.getPage(1).then(page => {
+            // Use higher scale for better quality
+            const scale = 0.8; // Increased from 0.2 to 0.8
+            const viewport = page.getViewport({scale: scale});
+            const context = canvas.getContext('2d');
+            
+            // Set canvas size to match the scaled viewport
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            
+            // Set display size to fit in the container (170x120)
+            canvas.style.width = '170px';
+            canvas.style.height = '120px';
+
+            page.render({
+                canvasContext: context,
+                viewport: viewport,
+            });
+        });
+    });
+}
 
 // Initialize by rendering the first page
 document.addEventListener('DOMContentLoaded', () => {
