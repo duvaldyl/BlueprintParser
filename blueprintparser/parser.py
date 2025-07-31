@@ -40,21 +40,54 @@ class BlueprintParser:
         self.min_samples = min_samples
 
     def clip_region(self, page_number, bbox, scale=1):
-        outpdf = pymupdf.open()
-        outpage = outpdf.new_page(width=700, height=700)
-        scale_bbox = tuple(map(lambda x: x/scale, bbox)) 
+        # Get the original page to understand its dimensions
+        original_page = self.doc[page_number]
+        page_rect = original_page.rect
         
+        # Convert display coordinates to PDF coordinates
+        # bbox comes in as (startX, startY, endX, endY) from the display
+        x0, y0, x1, y1 = bbox
+        
+        # Ensure coordinates are in the correct order (min/max)
+        min_x = min(x0, x1)
+        max_x = max(x0, x1)
+        min_y = min(y0, y1)
+        max_y = max(y0, y1)
+        
+        # Convert from display scale to PDF coordinates
+        # The scale factor represents how much the PDF was scaled down to fit the display
+        pdf_x0 = min_x / scale
+        pdf_y0 = min_y / scale
+        pdf_x1 = max_x / scale
+        pdf_y1 = max_y / scale
+        
+        # Create the clipping rectangle
+        clip_rect = pymupdf.Rect(pdf_x0, pdf_y0, pdf_x1, pdf_y1)
+        
+        # Calculate dimensions for the output page
+        clip_width = pdf_x1 - pdf_x0
+        clip_height = pdf_y1 - pdf_y0
+        
+        # Create output PDF with appropriate size
+        outpdf = pymupdf.open()
+        outpage = outpdf.new_page(width=clip_width + 2*self.margin, height=clip_height + 2*self.margin)
+        
+        # Show the clipped region on the new page
         outpage.show_pdf_page(
-            pymupdf.Rect(self.margin, self.margin, 640-self.margin, 640-self.margin),
+            pymupdf.Rect(self.margin, self.margin, 
+                        clip_width + self.margin, 
+                        clip_height + self.margin),
             self.doc,
             pno=page_number,
-            clip=scale_bbox,
+            clip=clip_rect,
         )
 
         uuid_tag = str(uuid.uuid4())
-
         save_path = "blueprintparser/clips/" + str(page_number+1) + "_" + uuid_tag + "_clip.pdf"
+        
         outpdf.save(save_path)
+        outpdf.close()
+        
         return uuid_tag
 
     def save_clips(self, src_path, save_path):
