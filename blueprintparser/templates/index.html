@@ -26,14 +26,25 @@
         </div>
 
         <div class="blueprint-viewer" id="blueprint-viewer">
-            <canvas id="pdf-viewer"></canvas>
-            <canvas id="bounding-box"></canvas>
+            <div class="canvas-container" id="canvas-container">
+                <canvas id="pdf-viewer"></canvas>
+                <canvas id="bounding-box"></canvas>
+            </div>
         </div>
 
         <div class="page-controls">
-            <button id='page-up'> Up </button>
-            <input type=number id=page-number-input>
-            <button id='page-down'> Down </button>
+            <div class="page-navigation">
+                <button id='page-up'>Page Up</button>
+                <button id='page-down'>Page Down</button>
+            </div>
+            <div class="page-input-group">
+                <label for="page-number-input">Page:</label>
+                <input type="number" id="page-number-input" min="1" placeholder="1">
+            </div>
+            <div class="zoom-controls">
+                <button id='zoom-in'>Zoom In</button>
+                <button id='zoom-out'>Zoom Out</button>
+            </div>
         </div>
 
     </div>

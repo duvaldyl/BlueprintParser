@@ -5,7 +5,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "../static/pdfjs-5.3.31-dist/build/pdf.
 let pageNumber = 1;
 let scale = 1;
 let displayScale = 1; // Scale factor used for display
+let userZoom = 1; // User-controlled zoom level
 let pdfViewport = null; // Store the viewport for coordinate calculations
+let baseFitScale = 1; // Base scale to fit PDF in container
 
 var isRendering = null;
 
@@ -22,16 +24,20 @@ async function renderPage(pageNumber) {
         const page = await pdf.getPage(pageNumber);
         
         const viewer = document.getElementById("blueprint-viewer");
+        const canvasContainer = document.getElementById("canvas-container");
         const pdfCanvas = document.getElementById("pdf-viewer");
         const boundingBoxCanvas = document.getElementById("bounding-box");
 
         // Get the natural viewport at scale 1
         const naturalViewport = page.getViewport({scale: 1});
         
-        // Calculate display scale to fit container
-        displayScale = Math.min(viewer.clientWidth/naturalViewport.width, viewer.clientHeight/naturalViewport.height);
+        // Calculate base scale to fit container (used as reference)
+        baseFitScale = Math.min(viewer.clientWidth/naturalViewport.width, viewer.clientHeight/naturalViewport.height);
         
-        // Use higher resolution for better quality (2x device pixel ratio or minimum 2x)
+        // Apply user zoom to the base fit scale
+        displayScale = baseFitScale * userZoom;
+        
+        // Use higher resolution for better quality
         const devicePixelRatio = window.devicePixelRatio || 1;
         const renderScale = Math.max(displayScale * devicePixelRatio, displayScale * 2);
         
@@ -40,37 +46,59 @@ async function renderPage(pageNumber) {
         
         // Store the display viewport for coordinate calculations
         pdfViewport = page.getViewport({scale: displayScale});
-        scale = displayScale; // Keep this for backwards compatibility
+        scale = displayScale; // Keep this for backwards compatibility with clip function
+        
+        // Calculate display dimensions
+        const displayWidth = pdfViewport.width;
+        const displayHeight = pdfViewport.height;
+        
+        // Container dimensions
+        const containerWidth = viewer.clientWidth;
+        const containerHeight = viewer.clientHeight;
+        
+        // Set canvas container size to match PDF display size
+        canvasContainer.style.width = displayWidth + 'px';
+        canvasContainer.style.height = displayHeight + 'px';
+        
+        // Center the container when PDF is smaller than viewer
+        if (displayWidth < containerWidth) {
+            canvasContainer.style.marginLeft = 'auto';
+            canvasContainer.style.marginRight = 'auto';
+        } else {
+            canvasContainer.style.marginLeft = '0';
+            canvasContainer.style.marginRight = '0';
+        }
+        
+        if (displayHeight < containerHeight) {
+            canvasContainer.style.marginTop = 'auto';
+            canvasContainer.style.marginBottom = 'auto';
+        } else {
+            canvasContainer.style.marginTop = '0';
+            canvasContainer.style.marginBottom = '0';
+        }
         
         // Set canvas size for high resolution
         pdfCanvas.width = renderViewport.width;
         pdfCanvas.height = renderViewport.height;
         
-        // Set display size to fit container
-        pdfCanvas.style.width = pdfViewport.width + 'px';
-        pdfCanvas.style.height = pdfViewport.height + 'px';
+        // Set display size to actual PDF size
+        pdfCanvas.style.width = displayWidth + 'px';
+        pdfCanvas.style.height = displayHeight + 'px';
 
-        // Set bounding box canvas to match display size
-        boundingBoxCanvas.width = pdfViewport.width;
-        boundingBoxCanvas.height = pdfViewport.height;
-        boundingBoxCanvas.style.width = pdfViewport.width + 'px';
-        boundingBoxCanvas.style.height = pdfViewport.height + 'px';
-        
-        // Center both canvases in the container
-        const containerRect = viewer.getBoundingClientRect();
-        const canvasLeft = (containerRect.width - pdfViewport.width) / 2;
-        const canvasTop = (containerRect.height - pdfViewport.height) / 2;
-        
-        pdfCanvas.style.left = canvasLeft + 'px';
-        pdfCanvas.style.top = canvasTop + 'px';
-        boundingBoxCanvas.style.left = canvasLeft + 'px';
-        boundingBoxCanvas.style.top = canvasTop + 'px';
+        // Set bounding box canvas to match PDF display size
+        boundingBoxCanvas.width = displayWidth;
+        boundingBoxCanvas.height = displayHeight;
+        boundingBoxCanvas.style.width = displayWidth + 'px';
+        boundingBoxCanvas.style.height = displayHeight + 'px';
 
         const context = pdfCanvas.getContext('2d');
         
+        // Clear canvas
+        context.clearRect(0, 0, pdfCanvas.width, pdfCanvas.height);
+        
         // Scale context for high resolution rendering
         const scaleRatio = renderScale / displayScale;
-        context.scale(scaleRatio, scaleRatio);
+        context.setTransform(scaleRatio, 0, 0, scaleRatio, 0, 0);
         
         const renderContext = {
             canvasContext: context,
@@ -98,6 +126,21 @@ document.getElementById('page-down').addEventListener('click', async (e) => {
     if(!isRendering) {
         pageNumber--;
         document.getElementById('page-number-input').value = pageNumber;
+        await renderPage(pageNumber);
+    }
+});
+
+// Zoom functionality
+document.getElementById('zoom-in').addEventListener('click', async () => {
+    if (!isRendering) {
+        userZoom = Math.min(userZoom * 1.2, 5); // Max 5x zoom
+        await renderPage(pageNumber);
+    }
+});
+
+document.getElementById('zoom-out').addEventListener('click', async () => {
+    if (!isRendering) {
+        userZoom = Math.max(userZoom / 1.2, 0.1); // Min 0.1x zoom
         await renderPage(pageNumber);
     }
 });
@@ -156,6 +199,17 @@ canvas.addEventListener('mouseup', e => {
 })
 
 document.getElementById('clip').addEventListener('click', e => {
+    // Transform canvas coordinates back to original PDF coordinates (scale 1)
+    // Canvas coordinates are at displayScale, we need to get back to scale 1
+    const originalPdfStartX = startX / displayScale;
+    const originalPdfStartY = startY / displayScale;
+    const originalPdfEndX = endX / displayScale;
+    const originalPdfEndY = endY / displayScale;
+
+    console.log('Canvas coordinates:', {startX, startY, endX, endY});
+    console.log('Display scale:', displayScale);
+    console.log('Original PDF coordinates:', {originalPdfStartX, originalPdfStartY, originalPdfEndX, originalPdfEndY});
+
     fetch('/clip', {
         method: 'POST',
         headers: {
@@ -163,11 +217,11 @@ document.getElementById('clip').addEventListener('click', e => {
         },
         body: JSON.stringify({
             pageNumber: pageNumber,
-            startX: startX,
-            startY: startY,
-            endX: endX,
-            endY: endY,
-            scale: scale
+            startX: originalPdfStartX,
+            startY: originalPdfStartY,
+            endX: originalPdfEndX,
+            endY: originalPdfEndY,
+            scale: 1  // Always send scale 1 since we're sending original PDF coordinates
         })
     })
     .then(response => response.json())
