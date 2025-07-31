@@ -252,16 +252,21 @@ document.getElementById('save').addEventListener('click', e => {
     .then(response => response.json())
     .then(data => {
         if(!data.success) {
-            console.error(data.error)
-        }
-    });
-    const link = document.createElement('a');
-    link.href = "/save/final.pdf";
-    link.download = "blueprint.pdf";
+            console.error(data.error);
+        } else {
+            // Only download after the server confirms the file was created successfully
+            const link = document.createElement('a');
+            link.href = "/save/final.pdf";
+            link.download = "blueprint.pdf";
 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving clips:', error);
+    });
 });
 
 // Initialize by rendering the first page
