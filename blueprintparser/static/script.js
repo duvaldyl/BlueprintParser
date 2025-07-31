@@ -5,67 +5,78 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "../static/pdfjs-5.3.31-dist/build/pdf.
 let pageNumber = 1;
 let scale = 1;
 
+var isRendering = null;
+
 async function renderPage(pageNumber) {
-    var loadingTask = pdfjsLib.getDocument('/upload/blueprint.pdf');
-    // pageNumber = parseInt(e.target.value);
-    loadingTask.promise.then(function(pdf) {
-        pdf.getPage(pageNumber).then(function(page) {
-            var viewer = document.getElementById("blueprint-viewer");
-            var pdfCanvas = document.getElementById("pdf-viewer");
-            var boundingBoxCanvas = document.getElementById("bounding-box");
+    if (isRendering) {
+        return;
+    }
 
-            var viewport = page.getViewport({scale: 1});
-            scale = Math.min(viewer.clientWidth/viewport.width, viewer.clientHeight/viewport.height);
+    isRendering = true;
+    
+    try {
+        const loadingTask = pdfjsLib.getDocument('/upload/blueprint.pdf');
+        const pdf = await loadingTask.promise;
+        const page = await pdf.getPage(pageNumber);
+        
+        const viewer = document.getElementById("blueprint-viewer");
+        const pdfCanvas = document.getElementById("pdf-viewer");
+        const boundingBoxCanvas = document.getElementById("bounding-box");
 
-            // var outputscale = window.devicePixelRatio || 1;
-            // scale= scale * outputscale;
-            viewport = page.getViewport({scale: scale});
-            
-            pdfCanvas.height = viewport.height;
-            pdfCanvas.width = viewport.width; 
+        let viewport = page.getViewport({scale: 1});
+        scale = Math.min(viewer.clientWidth/viewport.width, viewer.clientHeight/viewport.height);
+        
+        viewport = page.getViewport({scale: scale});
+        
+        pdfCanvas.height = viewport.height;
+        pdfCanvas.width = viewport.width; 
 
-            /* 
-            var widthScale = viewer.clientWidth/pdfCanvas.width
-            var heightScale = viewer.clientHeight/pdfCanvas.height;
+        boundingBoxCanvas.height = pdfCanvas.clientHeight;
+        boundingBoxCanvas.width = pdfCanvas.clientWidth;
 
-            var adjScale = Math.min(widthScale, heightScale);
+        const context = pdfCanvas.getContext('2d');
+        const renderContext = {
+            canvasContext: context,
+            viewport: viewport
+        };
 
-           
-            pdfCanvas.style.height = `${pdfCanvas.height*adjScale}px`;
-            pdfCanvas.style.width = `${pdfCanvas.width*adjScale}px`;
-            */
-
-            boundingBoxCanvas.height = pdfCanvas.clientHeight;
-            boundingBoxCanvas.width = pdfCanvas.clientWidth;
-
-
-            var context = pdfCanvas.getContext('2d');
-
-            var renderContext = {
-                canvasContext: context,
-                viewport: viewport
-            }
-
-            page.render(renderContext);
-        });
-    });
+        await page.render(renderContext).promise;
+        
+    } catch (error) {
+        console.error('Error rendering page:', error);
+    } finally {
+        isRendering = false;
+    }
 }
 
-document.getElementById('page-up').addEventListener('click', async e => {
-    pageNumber++;
-    document.getElementById('page-number-input').value = pageNumber;
-    await renderPage(pageNumber);
+document.getElementById('page-up').addEventListener('click', async () => {
+    if(!isRendering) {
+        pageNumber++;
+        document.getElementById('page-number-input').value = pageNumber;
+        await renderPage(pageNumber);
+    }
 });
 
-document.getElementById('page-down').addEventListener('click', e => {
-    pageNumber--;
-    document.getElementById('page-number-input').value = pageNumber;
-    renderPage(pageNumber);
+document.getElementById('page-down').addEventListener('click', async (e) => {
+    if(!isRendering) {
+        pageNumber--;
+        document.getElementById('page-number-input').value = pageNumber;
+        await renderPage(pageNumber);
+    }
 });
 
+let inputTimeout;
 document.getElementById('page-number-input').addEventListener('input', e => {
-    pageNumber = parseInt(e.target.value);
-    renderPage(pageNumber);
+    const newPageNumber = parseInt(e.target.value);
+
+    clearTimeout(inputTimeout);
+    
+    inputTimeout = setTimeout(() => {
+        if (!isRendering && newPageNumber !== pageNumber) {
+            pageNumber = newPageNumber;
+            renderPage(pageNumber);
+        }
+    }, 300);
 });
 
 const canvas = document.getElementById('bounding-box');
