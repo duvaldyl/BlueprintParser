@@ -1,3 +1,4 @@
+import uuid
 import pymupdf
 import numpy as np
 from sklearn.cluster import DBSCAN
@@ -49,7 +50,25 @@ class BlueprintParser:
             pno=page_number,
             clip=scale_bbox,
         )
-        outpdf.save("clip.pdf")
+
+        uuid_tag = str(uuid.uuid4())
+
+        save_path = "blueprintparser/clips/" + str(page_number+1) + "_" + uuid_tag + "_clip.pdf"
+        outpdf.save(save_path)
+        return uuid_tag
+
+    def save_clips(self, src_path, save_path):
+        outpdf = pymupdf.open()
+        clips = [f for f in os.listdir(src_path) if f.endswith(".pdf")]
+
+        for clip in clips:
+            full_path = os.path.join(src_path, clip)    
+            src_pdf = pymupdf.open(full_path)
+            outpdf.insert_pdf(src_pdf)
+            src_pdf.close()
+
+        outpdf.save(save_path)
+        outpdf.close()
 
     def parse_page(self, page_number, save_path):
         print("Parsing page: " + str(page_number) + "...")

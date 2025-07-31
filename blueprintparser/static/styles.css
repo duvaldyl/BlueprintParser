@@ -3,12 +3,28 @@ body {
     width: 100vw;
 }
 
-.controls {
-    width: 100vw;
+
+.viewer {
     display: flex;
     flex-direction: row;
-    background-color: blue;
-    justify-content: space-between;
+    width: 100vw;
+    height: 100vh;
+    background-color: purple; 
+}
+
+.blueprint-viewer {
+    width: 100%;
+    background-color: yellow;
+    display: flex;
+}
+
+#pdf-viewer {
+    position: absolute;
+}
+
+#bounding-box {
+    position: absolute;
+    background-color: transparent;
 }
 
 .page-controls {
@@ -17,19 +33,17 @@ body {
     background-color: orange;
 }
 
-.viewer {
-    width: 100vw;
-    height: 100vh;
+.options {
     display: flex;
-    background-color: purple; 
+    flex-direction: column;
 }
 
-#pdf-viewer {
-    background: green;
-    position: absolute;
+.clip-viewer {
+    overflow: scroll;
 }
 
-#bounding-box {
-    position: absolute;
-    background-color: transparent;
+#clipped-images {
+    display: flex;
+    flex-direction: column;
 }
+

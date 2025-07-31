@@ -11,20 +11,31 @@
             <input type="submit" id="submit">
         </form>
         <button id="clip">Clip</button>
+    </div>
+
+    <div class="viewer" id="viewer">
+        <!--
+        <p id='x-start'></p>
+        <p id='y-start'></p>
+        <p id='x'></p>
+        <p id='y'></p>
+        -->
+        <div class="clip-viewer">
+            <div id="clipped-images"></div>
+            <button id="save">Save</button>
+        </div>
+
+        <div class="blueprint-viewer" id="blueprint-viewer">
+            <canvas id="pdf-viewer"></canvas>
+            <canvas id="bounding-box"></canvas>
+        </div>
+
         <div class="page-controls">
             <button id='page-up'> Up </button>
             <input type=number id=page-number-input>
             <button id='page-down'> Down </button>
         </div>
-    </div>
-    <div class="viewer" id="viewer">
-        <p id='x-start'></p>
-        <p id='y-start'></p>
-        <p id='x'></p>
-        <p id='y'></p>
-        <canvas id="pdf-viewer"></canvas>
-        <!--iframe src="/static/Blueprint.pdf" id="pdf-viewer" width=1000 height=1000><iframe-->
-        <canvas id="bounding-box"></canvas>
+
     </div>
 
     <script type="module" src="../static/script.js"></script>

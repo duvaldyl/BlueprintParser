@@ -5,25 +5,38 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "../static/pdfjs-5.3.31-dist/build/pdf.
 let pageNumber = 1;
 let scale = 1;
 
-function renderPage(pageNumber) {
-    var loadingTask = pdfjsLib.getDocument('static/uploads/blueprint.pdf');
+async function renderPage(pageNumber) {
+    var loadingTask = pdfjsLib.getDocument('/upload/blueprint.pdf');
     // pageNumber = parseInt(e.target.value);
     loadingTask.promise.then(function(pdf) {
         pdf.getPage(pageNumber).then(function(page) {
-            var viewer = document.getElementById("viewer");
+            var viewer = document.getElementById("blueprint-viewer");
             var pdfCanvas = document.getElementById("pdf-viewer");
             var boundingBoxCanvas = document.getElementById("bounding-box");
 
             var viewport = page.getViewport({scale: 1});
             scale = Math.min(viewer.clientWidth/viewport.width, viewer.clientHeight/viewport.height);
-            viewport = page.getViewport({scale: scale});
 
-                        
+            // var outputscale = window.devicePixelRatio || 1;
+            // scale= scale * outputscale;
+            viewport = page.getViewport({scale: scale});
+            
             pdfCanvas.height = viewport.height;
             pdfCanvas.width = viewport.width; 
 
-            boundingBoxCanvas.height = pdfCanvas.height;
-            boundingBoxCanvas.width = pdfCanvas.width;
+            /* 
+            var widthScale = viewer.clientWidth/pdfCanvas.width
+            var heightScale = viewer.clientHeight/pdfCanvas.height;
+
+            var adjScale = Math.min(widthScale, heightScale);
+
+           
+            pdfCanvas.style.height = `${pdfCanvas.height*adjScale}px`;
+            pdfCanvas.style.width = `${pdfCanvas.width*adjScale}px`;
+            */
+
+            boundingBoxCanvas.height = pdfCanvas.clientHeight;
+            boundingBoxCanvas.width = pdfCanvas.clientWidth;
 
 
             var context = pdfCanvas.getContext('2d');
@@ -38,10 +51,10 @@ function renderPage(pageNumber) {
     });
 }
 
-document.getElementById('page-up').addEventListener('click', e => {
+document.getElementById('page-up').addEventListener('click', async e => {
     pageNumber++;
     document.getElementById('page-number-input').value = pageNumber;
-    renderPage(pageNumber);
+    await renderPage(pageNumber);
 });
 
 document.getElementById('page-down').addEventListener('click', e => {
@@ -74,10 +87,6 @@ document.addEventListener('mousemove', e => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.strokeRect(startX, startY, endX-startX, endY-startY);
         ctx.strokeStyle = 'red';
-        document.getElementById('x-start').textContent = startX;
-        document.getElementById('y-start').textContent = startY;
-        document.getElementById('x').textContent = endX;
-        document.getElementById('y').textContent = endY;
     }
 });
 
@@ -103,7 +112,39 @@ document.getElementById('clip').addEventListener('click', e => {
     .then(response => response.json())
     .then(data => {
         if(!data.success) {
-            console.log(data.error);
+            console.error(data.error);
+        } else {
+            let uuid = data.uuid;
+            let clippedImagesContainer = document.getElementById("clipped-images");
+            let iframe = document.createElement('iframe');
+            iframe.src = "/clips/" + parseInt(pageNumber) + "_" + uuid + "_clip.pdf";
+            clippedImagesContainer.appendChild(iframe);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
+    });
+});
+
+document.getElementById('save').addEventListener('click', e => {
+    fetch('/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            good: true,
+        })
     })
+    .then(response => response.json())
+    .then(data => {
+        if(!data.success) {
+            console.error(data.error)
+        }
+    });
+    const link = document.createElement('a');
+    link.href = "/save/final.pdf";
+    link.download = "blueprint.pdf";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 });
