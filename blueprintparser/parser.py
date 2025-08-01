@@ -39,7 +39,7 @@ class BlueprintParser:
         self.eps = eps
         self.min_samples = min_samples
 
-    def clip_region(self, page_number, bbox, scale=1):
+    def clip_region(self, page_number, bbox, scale=1, sizing_mode='bounding-box', fixed_width=None, fixed_height=None):
         # Get the original page to understand its dimensions
         original_page = self.doc[page_number]
         page_rect = original_page.rect
@@ -64,19 +64,50 @@ class BlueprintParser:
         # Create the clipping rectangle
         clip_rect = pymupdf.Rect(pdf_x0, pdf_y0, pdf_x1, pdf_y1)
         
-        # Calculate dimensions for the output page
-        clip_width = pdf_x1 - pdf_x0
-        clip_height = pdf_y1 - pdf_y0
+        # Calculate dimensions for the output page based on sizing mode
+        if sizing_mode == 'fixed-size' and fixed_width and fixed_height:
+            # Use fixed dimensions
+            output_width = fixed_width
+            output_height = fixed_height
+            
+            # Calculate the original clipped content dimensions
+            clip_width = pdf_x1 - pdf_x0
+            clip_height = pdf_y1 - pdf_y0
+            
+            # Calculate scaling to fit the content within the fixed dimensions (preserving aspect ratio)
+            scale_x = (output_width - 2*self.margin) / clip_width
+            scale_y = (output_height - 2*self.margin) / clip_height
+            content_scale = min(scale_x, scale_y)
+            
+            # Calculate the actual content size after scaling
+            scaled_content_width = clip_width * content_scale
+            scaled_content_height = clip_height * content_scale
+            
+            # Calculate centering offsets
+            offset_x = (output_width - scaled_content_width) / 2
+            offset_y = (output_height - scaled_content_height) / 2
+            
+        else:
+            # Use bounding box size (original behavior)
+            clip_width = pdf_x1 - pdf_x0
+            clip_height = pdf_y1 - pdf_y0
+            output_width = clip_width + 2*self.margin
+            output_height = clip_height + 2*self.margin
+            content_scale = 1.0
+            offset_x = self.margin
+            offset_y = self.margin
+            scaled_content_width = clip_width
+            scaled_content_height = clip_height
         
         # Create output PDF with appropriate size
         outpdf = pymupdf.open()
-        outpage = outpdf.new_page(width=clip_width + 2*self.margin, height=clip_height + 2*self.margin)
+        outpage = outpdf.new_page(width=output_width, height=output_height)
         
         # Show the clipped region on the new page
         outpage.show_pdf_page(
-            pymupdf.Rect(self.margin, self.margin, 
-                        clip_width + self.margin, 
-                        clip_height + self.margin),
+            pymupdf.Rect(offset_x, offset_y, 
+                        offset_x + scaled_content_width, 
+                        offset_y + scaled_content_height),
             self.doc,
             pno=page_number,
             clip=clip_rect,
@@ -93,9 +124,12 @@ class BlueprintParser:
     def save_clips(self, src_path, save_path):
         outpdf = pymupdf.open()
         clips = [f for f in os.listdir(src_path) if f.endswith(".pdf")]
+        
+        # Sort clips by creation time to maintain the order they were taken
+        clip_paths = [os.path.join(src_path, clip) for clip in clips]
+        clip_paths.sort(key=lambda x: os.path.getctime(x))
 
-        for clip in clips:
-            full_path = os.path.join(src_path, clip)    
+        for full_path in clip_paths:
             src_pdf = pymupdf.open(full_path)
             outpdf.insert_pdf(src_pdf)
             src_pdf.close()

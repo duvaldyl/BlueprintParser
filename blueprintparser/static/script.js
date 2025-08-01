@@ -2,6 +2,8 @@ import * as pdfjsLib from "../static/pdfjs-5.3.31-dist/build/pdf.mjs"
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "../static/pdfjs-5.3.31-dist/build/pdf.worker.mjs";
 
+let totalPages = null;
+
 let pageNumber = 1;
 let scale = 1;
 let displayScale = 1; // Scale factor used for display
@@ -9,7 +11,54 @@ let userZoom = 1; // User-controlled zoom level
 let pdfViewport = null; // Store the viewport for coordinate calculations
 let baseFitScale = 1; // Base scale to fit PDF in container
 
-var isRendering = null;
+let isRendering = null;
+
+async function renderPageAux(pageNumber) {
+    if(isRendering) {
+        return;
+    }
+
+    isRendering = true;
+
+    try {
+        const loadingTask = pdfjsLib.getDocument('/upload/blueprint.pdf');
+        const pdf = await loadingTask.promise;
+        const page = await pdf.getPage(pageNumber);
+
+        const viewer = document.getElementById("blueprint-viewer");
+        const pdfCanvas = document.getElementById("pdf-viewer");
+        const boundingBoxCanvas = document.getElementById("bounding-box");
+        const context = pdfCanvas.getContext('2d');
+
+        var viewport = page.getViewport({scale: userZoom});
+
+        baseFitScale = Math.min(viewer.clientHeight/viewport.height, viewer.clientWidth/viewport.width);
+
+        pdfCanvas.width = viewport.width;
+        pdfCanvas.height = viewport.height;
+        
+        pdfCanvas.style.width = viewport.width*baseFitScale*userZoom + "px";
+        pdfCanvas.style.height = viewport.height*baseFitScale*userZoom + "px";
+
+        boundingBoxCanvas.style.width = viewport.width*baseFitScale*userZoom + "px";
+        boundingBoxCanvas.style.height = viewport.height*baseFitScale*userZoom + "px";
+
+        boundingBoxCanvas.width = viewport.width*baseFitScale*userZoom;
+        boundingBoxCanvas.height = viewport.height*baseFitScale*userZoom;
+
+
+        const renderContext = {
+            canvasContext: context,
+            viewport: viewport 
+        };
+
+        await page.render(renderContext).promise;
+    } catch (error) {
+        console.error('Error rendering page:', error);
+    } finally {
+        isRendering = false;
+    }
+}
 
 async function renderPage(pageNumber) {
     if (isRendering) {
@@ -22,6 +71,7 @@ async function renderPage(pageNumber) {
         const loadingTask = pdfjsLib.getDocument('/upload/blueprint.pdf');
         const pdf = await loadingTask.promise;
         const page = await pdf.getPage(pageNumber);
+        totalPages = pdf.numPages;
         
         const viewer = document.getElementById("blueprint-viewer");
         const canvasContainer = document.getElementById("canvas-container");
@@ -76,7 +126,7 @@ async function renderPage(pageNumber) {
             canvasContainer.style.marginTop = '0';
             canvasContainer.style.marginBottom = '0';
         }
-        
+
         // Set canvas size for high resolution
         pdfCanvas.width = renderViewport.width;
         pdfCanvas.height = renderViewport.height;
@@ -115,33 +165,33 @@ async function renderPage(pageNumber) {
 }
 
 document.getElementById('page-up').addEventListener('click', async () => {
-    if(!isRendering) {
+    if(!isRendering && pageNumber != totalPages) {
         pageNumber++;
         document.getElementById('page-number-input').value = pageNumber;
-        await renderPage(pageNumber);
+        await renderPageAux(pageNumber);
     }
 });
 
 document.getElementById('page-down').addEventListener('click', async (e) => {
-    if(!isRendering) {
+    if(!isRendering && pageNumber != 1) {
         pageNumber--;
         document.getElementById('page-number-input').value = pageNumber;
-        await renderPage(pageNumber);
+        await renderPageAux(pageNumber);
     }
 });
 
 // Zoom functionality
 document.getElementById('zoom-in').addEventListener('click', async () => {
     if (!isRendering) {
-        userZoom = Math.min(userZoom * 1.2, 5); // Max 5x zoom
-        await renderPage(pageNumber);
+        userZoom = Math.min(userZoom * 1.5, 5); // Max 5x zoom
+        await renderPageAux(pageNumber);
     }
 });
 
 document.getElementById('zoom-out').addEventListener('click', async () => {
     if (!isRendering) {
-        userZoom = Math.max(userZoom / 1.2, 0.1); // Min 0.1x zoom
-        await renderPage(pageNumber);
+        userZoom = Math.max(userZoom / 1.5, 0.5); // Min 0.1x zoom
+        await renderPageAux(pageNumber);
     }
 });
 
@@ -150,13 +200,23 @@ document.getElementById('page-number-input').addEventListener('input', e => {
     const newPageNumber = parseInt(e.target.value);
 
     clearTimeout(inputTimeout);
+
+    console.log('inside');
     
     inputTimeout = setTimeout(() => {
-        if (!isRendering && newPageNumber !== pageNumber) {
+        if (!isRendering && newPageNumber > totalPages) {
+            pageNumber = totalPages;
+            e.target.value = pageNumber;
+            renderPageAux(pageNumber);
+        } else if(!isRendering && newPageNumber <= 0 || !isRendering && isNaN(newPageNumber)) {
+            pageNumber = 1;
+            e.target.value = pageNumber;
+            renderPageAux(pageNumber);
+        } if (!isRendering && newPageNumber !== pageNumber) {
             pageNumber = newPageNumber;
-            renderPage(pageNumber);
+            renderPageAux(pageNumber);
         }
-    }, 300);
+    }, 1000);
 });
 
 const canvas = document.getElementById('bounding-box');
@@ -169,17 +229,18 @@ let isDrawing = false;
 function getMouseCoordinates(e, canvas) {
     const rect = canvas.getBoundingClientRect();
     return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
+        //x: e.clientX - rect.left,
+        //y: e.clientY - rect.top
+        x: e.clientX - rect.left + canvas.scrollLeft,
+        y: e.clientY - rect.top + canvas.scrollTop
     };
 }
-
 canvas.addEventListener('mousedown', e => {
     isDrawing = true;
     const coords = getMouseCoordinates(e, canvas);
     startX = coords.x;
     startY = coords.y;
-})
+});
 
 canvas.addEventListener('mousemove', e => {
     if (isDrawing) {
@@ -196,7 +257,7 @@ canvas.addEventListener('mousemove', e => {
 
 canvas.addEventListener('mouseup', e => {
     isDrawing = false;
-})
+});
 
 document.getElementById('clip').addEventListener('click', e => {
     // Transform canvas coordinates back to original PDF coordinates (scale 1)
@@ -210,6 +271,16 @@ document.getElementById('clip').addEventListener('click', e => {
     console.log('Display scale:', displayScale);
     console.log('Original PDF coordinates:', {originalPdfStartX, originalPdfStartY, originalPdfEndX, originalPdfEndY});
 
+    // Get sizing options
+    const sizingMode = document.querySelector('input[name="sizing-mode"]:checked').value;
+    let fixedWidth = null;
+    let fixedHeight = null;
+    
+    if (sizingMode === 'fixed-size') {
+        fixedWidth = parseInt(document.getElementById('fixed-width').value) || 640;
+        fixedHeight = parseInt(document.getElementById('fixed-height').value) || 640;
+    }
+
     fetch('/clip', {
         method: 'POST',
         headers: {
@@ -221,7 +292,10 @@ document.getElementById('clip').addEventListener('click', e => {
             startY: originalPdfStartY,
             endX: originalPdfEndX,
             endY: originalPdfEndY,
-            scale: 1  // Always send scale 1 since we're sending original PDF coordinates
+            scale: userZoom,  // Always send scale 1 since we're sending original PDF coordinates
+            sizingMode: sizingMode,
+            fixedWidth: fixedWidth,
+            fixedHeight: fixedHeight
         })
     })
     .then(response => response.json())
@@ -346,7 +420,22 @@ function renderClipPreview(canvas, clipUrl) {
     });
 }
 
-// Initialize by rendering the first page
-document.addEventListener('DOMContentLoaded', () => {
-    renderPage(pageNumber);
+// Sizing options functionality
+document.addEventListener('DOMContentLoaded', async () => {
+    // Handle radio button changes for sizing options
+    const sizingModeRadios = document.querySelectorAll('input[name="sizing-mode"]');
+    const fixedSizeInputs = document.getElementById('fixed-size-inputs');
+    
+    sizingModeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.value === 'fixed-size') {
+                fixedSizeInputs.style.visibility = 'visible';
+            } else {
+                fixedSizeInputs.style.visibility = 'hidden';
+            }
+        });
+    });
+    
+    // Initialize by rendering the first page
+    await renderPage(pageNumber);
 });

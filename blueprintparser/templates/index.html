@@ -10,16 +10,27 @@
             <input type="file" name="pdf">
             <input type="submit" id="submit">
         </form>
+        
         <button id="clip">Clip</button>
+        
+        <div class="sizing-options">
+            <label class="sizing-option">
+                <input type="radio" name="sizing-mode" value="bounding-box" checked>
+                <span>Use bounding box size</span>
+            </label>
+            <label class="sizing-option">
+                <input type="radio" name="sizing-mode" value="fixed-size">
+                <span>Fixed dimensions:</span>
+            </label>
+            <div class="fixed-size-inputs" id="fixed-size-inputs" style="visibility: hidden;">
+                <input type="number" id="fixed-width" placeholder="Width" min="1" value="640">
+                <span class="dimension-separator">×</span>
+                <input type="number" id="fixed-height" placeholder="Height" min="1" value="640">
+            </div>
+        </div>
     </div>
 
     <div class="viewer" id="viewer">
-        <!--
-        <p id='x-start'></p>
-        <p id='y-start'></p>
-        <p id='x'></p>
-        <p id='y'></p>
-        -->
         <div class="clip-viewer">
             <div id="clipped-images"></div>
             <button id="save">Save</button>
