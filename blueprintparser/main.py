@@ -65,3 +65,14 @@ def delete_clip(filename):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@bp.route('/autoclip/page', methods=['POST'])
+def autoclip_page():
+    try:
+        data = request.get_json()
+        page_number = data['pageNumber']
+        b = parser.BlueprintParser("./blueprintparser/uploads/blueprint.pdf", eps=110, min_samples=100)
+        b.parse_page(page_number, './blueprintparser/clips/')
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+

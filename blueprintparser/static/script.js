@@ -28,9 +28,10 @@ async function renderPageAux(pageNumber) {
         const viewer = document.getElementById("blueprint-viewer");
         const pdfCanvas = document.getElementById("pdf-viewer");
         const boundingBoxCanvas = document.getElementById("bounding-box");
+        const canvasContainer = document.getElementById("canvas-container");
         const context = pdfCanvas.getContext('2d');
 
-        var viewport = page.getViewport({scale: userZoom});
+        var viewport = page.getViewport({scale: 2});
 
         baseFitScale = Math.min(viewer.clientHeight/viewport.height, viewer.clientWidth/viewport.width);
 
@@ -43,6 +44,9 @@ async function renderPageAux(pageNumber) {
         boundingBoxCanvas.style.width = viewport.width*baseFitScale*userZoom + "px";
         boundingBoxCanvas.style.height = viewport.height*baseFitScale*userZoom + "px";
 
+        canvasContainer.style.height = viewport.height*baseFitScale*userZoom + "px";
+        canvasContainer.style.width = viewport.width*baseFitScale*userZoom + "px";
+
         boundingBoxCanvas.width = viewport.width*baseFitScale*userZoom;
         boundingBoxCanvas.height = viewport.height*baseFitScale*userZoom;
 
@@ -52,7 +56,12 @@ async function renderPageAux(pageNumber) {
             viewport: viewport 
         };
 
+        canvasContainer.style.marginTop = 'auto';
+        canvasContainer.style.marginBottom = 'auto';
+
+
         await page.render(renderContext).promise;
+
     } catch (error) {
         console.error('Error rendering page:', error);
     } finally {
@@ -168,6 +177,7 @@ document.getElementById('page-up').addEventListener('click', async () => {
     if(!isRendering && pageNumber != totalPages) {
         pageNumber++;
         document.getElementById('page-number-input').value = pageNumber;
+        userZoom = 1;
         await renderPageAux(pageNumber);
     }
 });
@@ -176,6 +186,7 @@ document.getElementById('page-down').addEventListener('click', async (e) => {
     if(!isRendering && pageNumber != 1) {
         pageNumber--;
         document.getElementById('page-number-input').value = pageNumber;
+        userZoom = 1;
         await renderPageAux(pageNumber);
     }
 });
@@ -207,16 +218,45 @@ document.getElementById('page-number-input').addEventListener('input', e => {
         if (!isRendering && newPageNumber > totalPages) {
             pageNumber = totalPages;
             e.target.value = pageNumber;
+            userZoom = 1;
             renderPageAux(pageNumber);
         } else if(!isRendering && newPageNumber <= 0 || !isRendering && isNaN(newPageNumber)) {
             pageNumber = 1;
             e.target.value = pageNumber;
+            userZoom = 1;
             renderPageAux(pageNumber);
-        } if (!isRendering && newPageNumber !== pageNumber) {
+        } else if (!isRendering && newPageNumber !== pageNumber) {
             pageNumber = newPageNumber;
+            userZoom = 1;
             renderPageAux(pageNumber);
         }
     }, 1000);
+});
+
+document.getElementById('auto-clip-page').addEventListener('click', e => {
+    fetch('/autoclip/page', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            pageNumber: pageNumber,
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(!data.success) {
+            console.error(data.error);
+        } else {
+            const link = document.createElement('a');
+            link.href = "/save/autoclip.pdf";
+            link.download = "autoclip.pdf";
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    });
 });
 
 const canvas = document.getElementById('bounding-box');
@@ -292,7 +332,7 @@ document.getElementById('clip').addEventListener('click', e => {
             startY: originalPdfStartY,
             endX: originalPdfEndX,
             endY: originalPdfEndY,
-            scale: userZoom,  // Always send scale 1 since we're sending original PDF coordinates
+            scale: userZoom,
             sizingMode: sizingMode,
             fixedWidth: fixedWidth,
             fixedHeight: fixedHeight
