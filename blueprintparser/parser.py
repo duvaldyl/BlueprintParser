@@ -138,7 +138,6 @@ class BlueprintParser:
         outpdf.close()
 
     def parse_page(self, page_number, save_path):
-        print("Parsing page: " + str(page_number) + "...")
         page = self.doc[page_number]
         paths = page.get_drawings()
         folder = save_path + "/Page_" + str(page_number)

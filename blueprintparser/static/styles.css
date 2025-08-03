@@ -7,7 +7,7 @@
 body {
     height: 100vh;
     width: 100vw;
-    overflow: hidden;
+    /* overflow: hidden; */
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -20,7 +20,8 @@ body {
     align-items: center;
     justify-content: center;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    min-height: 80px;
+    /* min-height: 80px; */
+    height: 10vh;
 }
 
 .controls form {
@@ -44,7 +45,6 @@ body {
     border: 1px solid #ddd;
     background: white;
     border-radius: 4px;
-    cursor: pointer;
     transition: all 0.2s ease;
 }
 
@@ -57,23 +57,12 @@ body {
     background-color: #e9ecef;
 }
 
-#clip {
-    background-color: #28a745;
-    color: white;
-    border-color: #28a745;
-}
-
-#clip:hover {
-    background-color: #218838;
-    border-color: #1e7e34;
-}
-
 .viewer {
     display: flex;
     flex-direction: row;
     width: 100vw;
-    height: calc(100vh - 80px);
-    overflow: hidden;
+    height: 90vh;
+    /* height: calc(100vh - 80px); */
 }
 
 .blueprint-viewer {
@@ -85,8 +74,6 @@ body {
     cursor: grab;
     user-select: none; /* Prevent text selection during drag */
     display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .blueprint-viewer:active {
@@ -95,11 +82,11 @@ body {
 
 .canvas-container {
     position: relative;
-    display: inline-block;
+    display: flex;
 }
 
 #pdf-viewer {
-    display: block;
+    display: absolute;
     image-rendering: crisp-edges;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: pixelated;
@@ -107,26 +94,30 @@ body {
 
 #bounding-box {
     position: absolute;
+    /*
     top: 0;
     left: 0;
+    */
     background-color: transparent;
-    pointer-events: auto;
-    z-index: 10;
+    /* pointer-events: auto; */
+    /*z-index: 10; */
 }
 
 
 .page-controls {
     display: flex;
+    justify-content: center;
     flex-direction: column;
     background-color: #ffffff;
-    width: 180px;
-    min-width: 180px;
-    flex-shrink: 0;
+    /* width: 180px; */
+    width: 100px;
+    /* min-width: 180px; */
+    /* flex-shrink: 0; */
     padding: 20px;
-    gap: 20px;
+    gap: 100px;
     border-left: 1px solid #e0e0e0;
-    height: 100vh;
-    overflow-y: auto;
+    height: 100%;
+    /* overflow-y: auto; */
 }
 
 .page-navigation {
@@ -155,19 +146,6 @@ body {
     background-color: #e9ecef;
 }
 
-.page-input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.page-input-group label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #495057;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
 
 #page-number-input {
     padding: 8px 10px;
