@@ -3,7 +3,6 @@ import pymupdf
 import numpy as np
 from sklearn.cluster import DBSCAN
 import os
-from .YOLOv8 import macro
 
 def compute_bounding_box(pts):
     x0 = min(pts[:, 0])

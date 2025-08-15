@@ -11,6 +11,11 @@ let userZoom = 1; // User-controlled zoom level
 let pdfViewport = null; // Store the viewport for coordinate calculations
 let baseFitScale = 1; // Base scale to fit PDF in container
 
+let marginTop = 'auto';
+let marginBottom = 'auto';
+let marginLeft = 'auto';
+let marginRight = 'auto';
+
 let isRendering = null;
 
 async function renderPageAux(pageNumber) {
@@ -56,8 +61,10 @@ async function renderPageAux(pageNumber) {
             viewport: viewport 
         };
 
-        canvasContainer.style.marginTop = 'auto';
-        canvasContainer.style.marginBottom = 'auto';
+        canvasContainer.style.marginTop = marginTop;
+        canvasContainer.style.marginBottom = marginBottom;
+        canvasContainer.style.marginLeft = marginLeft;
+        canvasContainer.style.marginRight = marginRight;
 
 
         await page.render(renderContext).promise;
@@ -195,6 +202,13 @@ document.getElementById('page-down').addEventListener('click', async (e) => {
 document.getElementById('zoom-in').addEventListener('click', async () => {
     if (!isRendering) {
         userZoom = Math.min(userZoom * 1.5, 5); // Max 5x zoom
+        let canvasContainer = document.getElementById('canvas-container');
+        /*
+        marginTop = canvasContainer.style.marginTop;
+        marginBottom = canvasContainer.style.marginBottom;
+        marginLeft = canvasContainer.style.marginLeft;
+        marginRight = canvasContainer.style.marginRight;
+        */
         await renderPageAux(pageNumber);
     }
 });
@@ -233,6 +247,7 @@ document.getElementById('page-number-input').addEventListener('input', e => {
     }, 1000);
 });
 
+/*
 document.getElementById('auto-clip-page').addEventListener('click', e => {
     fetch('/autoclip/page', {
         method: 'POST',
@@ -258,6 +273,7 @@ document.getElementById('auto-clip-page').addEventListener('click', e => {
         }
     });
 });
+*/
 
 const canvas = document.getElementById('bounding-box');
 const ctx = canvas.getContext('2d');
