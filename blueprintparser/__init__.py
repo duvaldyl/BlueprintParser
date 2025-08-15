@@ -2,8 +2,8 @@ import os
 import shutil
 
 from flask import Flask
-from . import clip 
-from . import main
+from .routes import clip 
+from .routes import main 
 
 
 def create_app(test_config=None):

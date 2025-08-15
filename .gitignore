@@ -13,6 +13,9 @@ instance/
 .coverage
 htmlcov/
 
+blueprintparser/clips
+blueprintparser/uploads
+
 dist/
 build/
 *.egg-info/
