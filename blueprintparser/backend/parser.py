@@ -120,7 +120,7 @@ class BlueprintParser:
         )
 
         uuid_tag = str(uuid.uuid4())
-        save_path = "blueprintparser/clips/" + str(page_number+1) + "_" + uuid_tag + "_clip.pdf"
+        save_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'clips', f"{page_number+1}_{uuid_tag}_clip.pdf")
         
         outpdf.save(save_path)
         outpdf.close()
@@ -130,8 +130,11 @@ class BlueprintParser:
     def auto_clip_page(self, page_number):
         page = self.doc[page_number]
         pix = page.get_pixmap()
-        pix.save('/tmp/yahh.jpg')
-        results = macro.predict('/tmp')
+        temp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'temp')
+        os.makedirs(temp_dir, exist_ok=True)
+        temp_file = os.path.join(temp_dir, 'temp.jpg')
+        pix.save(temp_file)
+        results = macro.predict(temp_dir)
         print('this is it')
 
         for result in results:
