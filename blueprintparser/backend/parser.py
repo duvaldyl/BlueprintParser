@@ -1,7 +1,7 @@
 import uuid
 import pymupdf
 import numpy as np
-from sklearn.cluster import DBSCAN
+# from sklearn.cluster import DBSCAN
 import os
 
 def compute_bounding_box(pts):

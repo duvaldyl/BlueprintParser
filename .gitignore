@@ -20,5 +20,7 @@ dist/
 build/
 *.egg-info/
 
+blueprintparser/uploads
+
 blueprintparser/.DS_Store
 
