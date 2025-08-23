@@ -1,6 +1,9 @@
-import * as pdfjsLib from "../static/pdfjs-5.3.31-dist/build/pdf.mjs"
+//import * as pdfjsLib from "../static/pdfjs-5.3.31-dist/build/pdf.mjs"
+//import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.3.31/pdf.min.js';
+import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.54/pdf.min.mjs';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = "../static/pdfjs-5.3.31-dist/build/pdf.worker.mjs";
+//pdfjsLib.GlobalWorkerOptions.workerSrc = "../static/pdfjs-5.3.31-dist/build/pdf.worker.mjs";
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.54/pdf.worker.mjs";
 
 let totalPages = null;
 
@@ -36,7 +39,7 @@ async function renderPageAux(pageNumber) {
         const canvasContainer = document.getElementById("canvas-container");
         const context = pdfCanvas.getContext('2d');
 
-        var viewport = page.getViewport({scale: 2});
+        var viewport = page.getViewport({scale: userZoom});
 
         baseFitScale = Math.min(viewer.clientHeight/viewport.height, viewer.clientWidth/viewport.width);
 
