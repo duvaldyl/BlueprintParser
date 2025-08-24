@@ -1,9 +1,11 @@
 import os
 import shutil
+import uuid
+from datetime import datetime, timedelta
 
 from flask import Flask
 from .routes import clip 
-from .routes import main 
+from .routes import main
 
 
 def create_app(test_config=None):
@@ -40,29 +42,13 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    # Clear and recreate uploads and clips folders to prevent corruption/collision
-    uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads')
-    clips_dir = os.path.join(os.path.dirname(__file__), 'clips')
+    # Create base directories for user sessions
+    base_uploads_dir = os.path.join(os.path.dirname(__file__), 'user_sessions')
+    os.makedirs(base_uploads_dir, exist_ok=True)
     
-    # Remove and recreate uploads folder with error handling
-    try:
-        if os.path.exists(uploads_dir):
-            shutil.rmtree(uploads_dir)
-        os.makedirs(uploads_dir, exist_ok=True)
-    except (OSError, PermissionError) as e:
-        print(f"Warning: Could not recreate uploads directory: {e}")
-        # Try to create if it doesn't exist
-        os.makedirs(uploads_dir, exist_ok=True)
-    
-    # Remove and recreate clips folder with error handling
-    try:
-        if os.path.exists(clips_dir):
-            shutil.rmtree(clips_dir)
-        os.makedirs(clips_dir, exist_ok=True)
-    except (OSError, PermissionError) as e:
-        print(f"Warning: Could not recreate clips directory: {e}")
-        # Try to create if it doesn't exist
-        os.makedirs(clips_dir, exist_ok=True)
+    # Clean up old session directories on startup (older than 24 hours)
+    from .session_utils import cleanup_old_sessions
+    cleanup_old_sessions()
 
     return app
 

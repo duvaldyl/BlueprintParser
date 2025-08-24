@@ -4,6 +4,7 @@ from flask import (
 import os
 
 from ..backend import parser
+from ..session_utils import get_or_create_session_id, get_session_directories
 
 bp = Blueprint('clip', __name__)
 
@@ -11,7 +12,8 @@ bp = Blueprint('clip', __name__)
 def clip():
     if request.method == 'POST':
         try:
-            uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
+            session_id = get_or_create_session_id()
+            uploads_dir, clips_dir = get_session_directories(session_id)
             blueprint_path = os.path.join(uploads_dir, 'blueprint.pdf')
             b = parser.BlueprintParser(blueprint_path, eps=110, min_samples=100)
             data = request.get_json()
@@ -31,7 +33,8 @@ def clip():
                 data['scale'],
                 sizing_mode=sizing_mode,
                 fixed_width=fixed_width,
-                fixed_height=fixed_height
+                fixed_height=fixed_height,
+                clips_dir=clips_dir
             )
             return jsonify({'success': True, 'uuid': uuid_tag})
         except Exception as e:

@@ -45,7 +45,7 @@ class BlueprintParser:
         self.eps = eps
         self.min_samples = min_samples
 
-    def clip_region(self, page_number, bbox, scale=1, sizing_mode='bounding-box', fixed_width=None, fixed_height=None):
+    def clip_region(self, page_number, bbox, scale=1, sizing_mode='bounding-box', fixed_width=None, fixed_height=None, clips_dir=None):
         # Get the original page to understand its dimensions
         original_page = self.doc[page_number]
         page_rect = original_page.rect
@@ -120,7 +120,12 @@ class BlueprintParser:
         )
 
         uuid_tag = str(uuid.uuid4())
-        save_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'clips', f"{page_number+1}_{uuid_tag}_clip.pdf")
+        
+        # Use provided clips_dir or fall back to default
+        if clips_dir is None:
+            clips_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'clips')
+        
+        save_path = os.path.join(clips_dir, f"{page_number+1}_{uuid_tag}_clip.pdf")
         
         outpdf.save(save_path)
         outpdf.close()
