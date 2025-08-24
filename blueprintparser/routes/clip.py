@@ -1,6 +1,7 @@
 from flask import (
     Blueprint, render_template, request, jsonify
 )
+import os
 
 from ..backend import parser
 
@@ -10,7 +11,9 @@ bp = Blueprint('clip', __name__)
 def clip():
     if request.method == 'POST':
         try:
-            b = parser.BlueprintParser('./blueprintparser/uploads/blueprint.pdf', eps=110, min_samples=100)
+            uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
+            blueprint_path = os.path.join(uploads_dir, 'blueprint.pdf')
+            b = parser.BlueprintParser(blueprint_path, eps=110, min_samples=100)
             data = request.get_json()
             x0 = data['startX']
             y0 = data['startY']

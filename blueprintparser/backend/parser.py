@@ -1,7 +1,7 @@
 import uuid
 import pymupdf
 import numpy as np
-# from sklearn.cluster import DBSCAN
+from sklearn.cluster import DBSCAN
 import os
 
 def compute_bounding_box(pts):
@@ -128,23 +128,26 @@ class BlueprintParser:
         return uuid_tag
 
     def auto_clip_page(self, page_number):
-        page = self.doc[page_number]
-        pix = page.get_pixmap()
-        temp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'temp')
-        os.makedirs(temp_dir, exist_ok=True)
-        temp_file = os.path.join(temp_dir, 'temp.jpg')
-        pix.save(temp_file)
-        results = macro.predict(temp_dir)
-        print('this is it')
+        # TODO: This method needs proper ML model import
+        # Commenting out to prevent runtime errors until macro is properly imported
+        pass
+        # page = self.doc[page_number]
+        # pix = page.get_pixmap()
+        # temp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'temp')
+        # os.makedirs(temp_dir, exist_ok=True)
+        # temp_file = os.path.join(temp_dir, 'temp.jpg')
+        # pix.save(temp_file)
+        # results = macro.predict(temp_dir)  # macro is not defined
+        # print('this is it')
 
-        for result in results:
-            for box in result.boxes:
-                cls_id = int(box.cls[0].item())
-                conf = float(box.conf[0].item())
-                xyxyn = box.xyxyn[0].tolist()
-                page = self.doc[page_number]
-                bbox = convert_xyxyn2bbox(xyxyn, page.rect.width, page.rect.height)
-                self.clip_region(page_number, bbox, sizing_mode='fixed-size', fixed_width=640, fixed_height=640)
+        # for result in results:
+        #     for box in result.boxes:
+        #         cls_id = int(box.cls[0].item())
+        #         conf = float(box.conf[0].item())
+        #         xyxyn = box.xyxyn[0].tolist()
+        #         page = self.doc[page_number]
+        #         bbox = convert_xyxyn2bbox(xyxyn, page.rect.width, page.rect.height)
+        #         self.clip_region(page_number, bbox, sizing_mode='fixed-size', fixed_width=640, fixed_height=640)
 
 
     def save_clips(self, src_path, save_path):
@@ -166,7 +169,7 @@ class BlueprintParser:
     def parse_page(self, page_number, save_path):
         page = self.doc[page_number]
         paths = page.get_drawings()
-        # folder = save_path + "/Page_" + str(page_number)
+        # folder = os.path.join(save_path, f"Page_{page_number}")
         # os.makedirs(folder, exist_ok=True)
 
         points = []
@@ -221,9 +224,9 @@ class BlueprintParser:
                 )
                 # draw_bbox(outpage_bbox, filtered_pts)
 
-        outpdf_parse.save(save_path + "/parse_" + str(page_number) + ".pdf")
+        outpdf_parse.save(os.path.join(save_path, f"parse_{page_number}.pdf"))
         # outpdf_bbox.save(folder + "/bbox" + str(page_number) + ".pdf")
 
-    def parse_pdf(self):
+    def parse_pdf(self, output_dir="Blueprint"):
         for i in range(len(self.doc)):
-            self.parse_page(i, "Blueprint")
+            self.parse_page(i, output_dir)

@@ -16,15 +16,23 @@ def upload():
         uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
         clips_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'clips')
         
-        # Remove and recreate uploads folder
-        if os.path.exists(uploads_dir):
-            shutil.rmtree(uploads_dir)
-        os.makedirs(uploads_dir, exist_ok=True)
+        # Remove and recreate uploads folder with error handling
+        try:
+            if os.path.exists(uploads_dir):
+                shutil.rmtree(uploads_dir)
+            os.makedirs(uploads_dir, exist_ok=True)
+        except (OSError, PermissionError):
+            # If we can't recreate, just ensure it exists
+            os.makedirs(uploads_dir, exist_ok=True)
         
-        # Remove and recreate clips folder
-        if os.path.exists(clips_dir):
-            shutil.rmtree(clips_dir)
-        os.makedirs(clips_dir, exist_ok=True)
+        # Remove and recreate clips folder with error handling
+        try:
+            if os.path.exists(clips_dir):
+                shutil.rmtree(clips_dir)
+            os.makedirs(clips_dir, exist_ok=True)
+        except (OSError, PermissionError):
+            # If we can't recreate, just ensure it exists
+            os.makedirs(clips_dir, exist_ok=True)
         
         file = request.files['pdf']
         file.save(os.path.join(uploads_dir, 'blueprint.pdf'))

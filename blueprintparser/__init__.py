@@ -8,14 +8,23 @@ from .routes import main
 
 def create_app(test_config=None):
     # create and configure the app
-    app = Flask(__name__, instance_relative_config=True, template_folder="./templates")
+    app = Flask(__name__, 
+                instance_relative_config=True, 
+                template_folder=os.path.join(os.path.dirname(__file__), 'templates'),
+                static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 
     app.register_blueprint(main.bp)
     app.register_blueprint(clip.bp)
 
+    # Use environment variable for SECRET_KEY, fallback to 'dev' for development
+    secret_key = os.environ.get('SECRET_KEY', 'dev')
+    
     app.config.from_mapping(
-        SECRET_KEY='dev',
+        SECRET_KEY=secret_key,
         DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
+        # Production settings
+        DEBUG=os.environ.get('FLASK_DEBUG', 'False').lower() == 'true',
+        TESTING=False,
     )
 
     if test_config is None:
@@ -35,15 +44,25 @@ def create_app(test_config=None):
     uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads')
     clips_dir = os.path.join(os.path.dirname(__file__), 'clips')
     
-    # Remove and recreate uploads folder
-    if os.path.exists(uploads_dir):
-        shutil.rmtree(uploads_dir)
-    os.makedirs(uploads_dir, exist_ok=True)
+    # Remove and recreate uploads folder with error handling
+    try:
+        if os.path.exists(uploads_dir):
+            shutil.rmtree(uploads_dir)
+        os.makedirs(uploads_dir, exist_ok=True)
+    except (OSError, PermissionError) as e:
+        print(f"Warning: Could not recreate uploads directory: {e}")
+        # Try to create if it doesn't exist
+        os.makedirs(uploads_dir, exist_ok=True)
     
-    # Remove and recreate clips folder
-    if os.path.exists(clips_dir):
-        shutil.rmtree(clips_dir)
-    os.makedirs(clips_dir, exist_ok=True)
+    # Remove and recreate clips folder with error handling
+    try:
+        if os.path.exists(clips_dir):
+            shutil.rmtree(clips_dir)
+        os.makedirs(clips_dir, exist_ok=True)
+    except (OSError, PermissionError) as e:
+        print(f"Warning: Could not recreate clips directory: {e}")
+        # Try to create if it doesn't exist
+        os.makedirs(clips_dir, exist_ok=True)
 
     return app
 
